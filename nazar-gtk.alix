@@ -1,0 +1,12 @@
+project_name = NazarGtk
+source_dir = src
+source_dir = src/driver
+depend = { project = wlib version = any }
+depend = { project = nazar version = any }
+depend = { project = GtkAda external = yes }
+main_unit = nazar-gtk_driver
+exec_name = nazar-gtk
+config_dir = config
+language = ada
+path_unit = { unit = Nazar.Gtk_Paths
+              path = src/nazar-gtk_paths.ads }

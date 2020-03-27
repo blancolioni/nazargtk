@@ -1,0 +1,29 @@
+with "wlib";
+with "nazar";
+with "gtkada";
+project nazargtk is
+
+   for Source_Dirs use (
+     ".\src",
+     ".\src\driver");
+
+   for Object_Dir use "build\obj";
+   for Exec_Dir use "build\bin";
+   for Main use (
+     "nazar-gtk_driver");
+
+   package Builder is
+      for Default_Switches ("ada") use ("-g", "-k", "-s", "-j2");
+   end Builder;
+
+   package Compiler is
+      for Default_Switches ("ada") use ("-g", "-gnatwae.wl", "-gnata", "-gnato", "-gnaty3abcefhiklmnoprstOSuxBA", "-gnat2012", "-fstack-check");
+   end Compiler;
+
+   package Linker is
+      for Default_Switches ("ada") use ();
+   end Linker;
+
+   for Languages use ("ada");
+
+end nazargtk;
