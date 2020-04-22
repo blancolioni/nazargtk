@@ -1,3 +1,4 @@
+private with Glib;
 private with Gtk.Drawing_Area;
 private with Cairo;
 
@@ -26,6 +27,8 @@ private
      new Nazar_Gtk_View_Record
      and Nazar.Views.Draw.Draw_View_Interface with
       record
+         Width     : Glib.Gint := 1;
+         Height    : Glib.Gint := 1;
          Draw_Area : Gtk.Drawing_Area.Gtk_Drawing_Area;
          Surface   : Cairo.Cairo_Surface := Cairo.Null_Surface;
          Viewport  : Rectangle;
@@ -42,6 +45,9 @@ private
    overriding procedure Set_Model
      (View  : not null access Nazar_Gtk_Draw_View_Record;
       Model : not null access Nazar.Models.Nazar_Model_Record'Class);
+
+   procedure Redraw
+     (View : in out Nazar_Gtk_Draw_View_Record);
 
    type Model_Access is
      access all Nazar.Models.Draw.Root_Draw_Model'Class;
