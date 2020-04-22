@@ -2,6 +2,7 @@ with WL.String_Maps;
 
 with Nazar.Views.Gtk_Views.Application;
 with Nazar.Views.Gtk_Views.Box;
+with Nazar.Views.Gtk_Views.Button;
 with Nazar.Views.Gtk_Views.Console;
 with Nazar.Views.Gtk_Views.Draw;
 with Nazar.Views.Gtk_Views.Label;
@@ -29,6 +30,9 @@ package body Nazar.Builder.Gtk_Creator is
      (Creator : Gtk_Creator_Record;
       Name    : String)
       return Nazar.Views.Nazar_View;
+
+   function Create_Button return Nazar.Views.Nazar_View
+   is (Nazar.Views.Gtk_Views.Button.Nazar_Gtk_Button_View_Create);
 
    function Create_Console return Nazar.Views.Nazar_View
    is (Nazar.Views.Gtk_Views.Console.Nazar_Gtk_Console_View_Create);
@@ -99,6 +103,8 @@ package body Nazar.Builder.Gtk_Creator is
         ("application",
          Nazar.Views.Gtk_Views.Application
          .Nazar_Gtk_Application_View_Create'Access);
+      Creator_Map.Insert
+        ("button", Create_Button'Access);
       Creator_Map.Insert
         ("console", Create_Console'Access);
       Creator_Map.Insert
