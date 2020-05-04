@@ -29,6 +29,7 @@ package body Nazar.Views.Gtk_Views.Draw is
       record
          Cr      : Cairo.Cairo_Context;
          X, Y    : Glib.Gdouble := 0.0;
+         Moved   : Boolean := False;
       end record;
 
    overriding procedure Move_To
@@ -161,6 +162,10 @@ package body Nazar.Views.Gtk_Views.Draw is
       X, Y   : Nazar_Float)
    is
    begin
+      if not Render.Moved then
+         Cairo.Move_To (Render.Cr, Render.X, Render.Y);
+         Render.Moved := True;
+      end if;
       Render.X := Glib.Gdouble (X);
       Render.Y := Glib.Gdouble (Y);
       Cairo.Line_To (Render.Cr, Render.X, Render.Y);
@@ -177,7 +182,7 @@ package body Nazar.Views.Gtk_Views.Draw is
    begin
       Render.X := Glib.Gdouble (X);
       Render.Y := Glib.Gdouble (Y);
-      Cairo.Move_To (Render.Cr, Render.X, Render.Y);
+      Render.Moved := False;
    end Move_To;
 
    --------------------------------
