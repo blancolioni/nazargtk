@@ -330,6 +330,18 @@ package body Nazar.Views.Gtk_Views.Draw is
         .Set_Model (Model);
    end Set_Model;
 
+   ------------------
+   -- Set_Viewport --
+   ------------------
+
+   overriding procedure Set_Viewport
+     (View     : in out Nazar_Gtk_Draw_View_Record;
+      Viewport : Rectangle)
+   is
+   begin
+      View.Viewport := Viewport;
+   end Set_Viewport;
+
    -----------------------
    -- Update_From_Model --
    -----------------------

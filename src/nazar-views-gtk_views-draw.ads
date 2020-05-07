@@ -46,6 +46,15 @@ private
      (View  : not null access Nazar_Gtk_Draw_View_Record;
       Model : not null access Nazar.Models.Nazar_Model_Record'Class);
 
+   overriding function Viewport
+     (View : Nazar_Gtk_Draw_View_Record)
+      return Rectangle
+   is (View.Viewport);
+
+   overriding procedure Set_Viewport
+     (View     : in out Nazar_Gtk_Draw_View_Record;
+      Viewport : Rectangle);
+
    procedure Redraw
      (View : in out Nazar_Gtk_Draw_View_Record);
 
