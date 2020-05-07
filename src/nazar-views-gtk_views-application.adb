@@ -9,6 +9,7 @@ with Gtk.Main;
 with Gtk.Style_Context;
 with Gtk.Widget;
 
+with Nazar.Main;
 with Nazar.Gtk_Main;
 
 package body Nazar.Views.Gtk_Views.Application is
@@ -158,7 +159,8 @@ package body Nazar.Views.Gtk_Views.Application is
 
    function Update_Views return Boolean is
    begin
-      Nazar.Gtk_Main.Execute_Updates;
+      Nazar.Main.With_Render_Lock
+        (Nazar.Gtk_Main.Execute_Updates'Access);
       return True;
    end Update_Views;
 
