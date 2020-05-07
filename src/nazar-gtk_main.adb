@@ -1,19 +1,6 @@
 with Ada.Containers.Doubly_Linked_Lists;
-with Ada.Containers.Indefinite_Holders;
-
-with Glib.Main;
 
 package body Nazar.Gtk_Main is
-
-   package User_Data_Holders is
-     new Ada.Containers.Indefinite_Holders
-       (Nazar.Signals.User_Data_Interface'Class,
-        Nazar.Signals."=");
-
-   Timer_User_Data : User_Data_Holders.Holder;
-   Timer_Callback  : Timer_Handler;
-
-   function On_Timer return Boolean;
 
    package View_Lists is
      new Ada.Containers.Doubly_Linked_Lists
@@ -41,16 +28,6 @@ package body Nazar.Gtk_Main is
          View.Update_From_Model;
       end loop;
    end Execute_Updates;
-
-   --------------
-   -- On_Timer --
-   --------------
-
-   function On_Timer return Boolean is
-   begin
-      Timer_Callback (Timer_User_Data.Element);
-      return True;
-   end On_Timer;
 
    ---------------------
    -- Schedule_Update --
@@ -90,23 +67,5 @@ package body Nazar.Gtk_Main is
       end Schedule;
 
    end Scheduled_Views;
-
-   -----------------
-   -- Start_Timer --
-   -----------------
-
-   procedure Start_Timer
-     (Timeout   : Duration;
-      User_Data : Nazar.Signals.User_Data_Interface'Class;
-      Callback  : Timer_Handler)
-   is
-      Timeout_Id : constant Glib.Main.G_Source_Id :=
-                     Glib.Main.Timeout_Add
-                       (Glib.Guint (Timeout * 1000.0), On_Timer'Access);
-   begin
-      pragma Unreferenced (Timeout_Id);
-      Timer_Callback := Callback;
-      Timer_User_Data := User_Data_Holders.To_Holder (User_Data);
-   end Start_Timer;
 
 end Nazar.Gtk_Main;
