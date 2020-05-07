@@ -135,6 +135,9 @@ package body Nazar.Views.Gtk_Views.Application is
          pragma Unreferenced (Timeout_Id);
       end;
 
+      View.Window.Maximize;
+      View.Window.Show_All;
+
       Gtk.Main.Main;
    end Show;
 
