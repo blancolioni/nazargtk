@@ -40,6 +40,10 @@ package body Nazar.Views.Gtk_Views.Draw is
      (Render : in out Cairo_Render_Type;
       X, Y   : Nazar_Float);
 
+   overriding procedure Text
+     (Render : in out Cairo_Render_Type;
+      S      : String);
+
    overriding procedure Arc
      (Render        : in out Cairo_Render_Type;
       Radius        : Nazar_Float;
@@ -54,6 +58,13 @@ package body Nazar.Views.Gtk_Views.Draw is
    overriding procedure Set_Color
      (Render : in out Cairo_Render_Type;
       Color  : Nazar.Colors.Nazar_Color);
+
+   overriding procedure Set_Font
+     (Render : in out Cairo_Render_Type;
+      Family : String;
+      Size   : Nazar_Float;
+      Italic : Boolean;
+      Bold   : Boolean);
 
    overriding procedure Save_State
      (Render : in out Cairo_Render_Type);
@@ -314,6 +325,32 @@ package body Nazar.Views.Gtk_Views.Draw is
          Glib.Gdouble (Color.Alpha));
    end Set_Color;
 
+   --------------
+   -- Set_Font --
+   --------------
+
+   overriding procedure Set_Font
+     (Render : in out Cairo_Render_Type;
+      Family : String;
+      Size   : Nazar_Float;
+      Italic : Boolean;
+      Bold   : Boolean)
+   is
+   begin
+      Cairo.Select_Font_Face
+        (Cr     => Render.Cr,
+         Family => Family,
+         Slant  =>
+           (if Italic
+            then Cairo.Cairo_Font_Slant_Italic
+            else Cairo.Cairo_Font_Slant_Normal),
+         Weight =>
+           (if Bold
+            then Cairo.Cairo_Font_Weight_Bold
+            else Cairo.Cairo_Font_Weight_Normal));
+      Cairo.Set_Font_Size (Render.Cr, Glib.Gdouble (Size));
+   end Set_Font;
+
    ---------------
    -- Set_Model --
    ---------------
@@ -341,6 +378,26 @@ package body Nazar.Views.Gtk_Views.Draw is
    begin
       View.Viewport := Viewport;
    end Set_Viewport;
+
+   ----------
+   -- Text --
+   ----------
+
+   overriding procedure Text
+     (Render : in out Cairo_Render_Type;
+      S      : String)
+   is
+   begin
+      if not Render.Moved then
+         Cairo.Move_To (Render.Cr, Render.X, Render.Y);
+         Render.Moved := True;
+      end if;
+
+      Cairo.Show_Text (Render.Cr, S);
+
+      Render.Moved := False;
+
+   end Text;
 
    -----------------------
    -- Update_From_Model --
