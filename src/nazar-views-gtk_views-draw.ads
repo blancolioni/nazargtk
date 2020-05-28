@@ -1,3 +1,5 @@
+private with Ada.Containers.Doubly_Linked_Lists;
+
 private with Glib;
 private with Gtk.Drawing_Area;
 private with Cairo;
@@ -21,7 +23,25 @@ package Nazar.Views.Gtk_Views.Draw is
      (Model : not null access Nazar.Models.Draw.Root_Draw_Model'Class)
       return Nazar_Gtk_Draw_View;
 
+   overriding procedure Append
+     (View  : not null access Nazar_Gtk_Draw_View_Record;
+      Model : not null access Nazar.Models.Draw.Root_Draw_Model'Class);
+
 private
+
+   type Model_Access is
+     access all Nazar.Models.Draw.Root_Draw_Model'Class;
+
+   type Draw_Layer_Record is
+      record
+         Background  : Boolean;
+         Need_Render : Boolean;
+         Model       : Model_Access;
+         Surface     : Cairo.Cairo_Surface;
+      end record;
+
+   package Draw_Layer_Lists is
+     new Ada.Containers.Doubly_Linked_Lists (Draw_Layer_Record);
 
    type Nazar_Gtk_Draw_View_Record is
      new Nazar_Gtk_View_Record
@@ -30,7 +50,7 @@ private
          Width     : Glib.Gint := 1;
          Height    : Glib.Gint := 1;
          Draw_Area : Gtk.Drawing_Area.Gtk_Drawing_Area;
-         Surface   : Cairo.Cairo_Surface := Cairo.Null_Surface;
+         Layers    : Draw_Layer_Lists.List;
          Viewport  : Rectangle;
       end record;
 
@@ -57,9 +77,6 @@ private
 
    procedure Redraw
      (View : in out Nazar_Gtk_Draw_View_Record);
-
-   type Model_Access is
-     access all Nazar.Models.Draw.Root_Draw_Model'Class;
 
    function Draw_Model
      (View : Nazar_Gtk_Draw_View_Record'Class)

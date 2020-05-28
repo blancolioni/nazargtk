@@ -1,5 +1,6 @@
 with Gdk.Event;
-with Gdk.Window;
+
+with Cairo.Image_Surface;
 
 with Nazar.Colors;
 with Nazar.Draw_Operations;
@@ -72,6 +73,28 @@ package body Nazar.Views.Gtk_Views.Draw is
    overriding procedure Restore_State
      (Render : in out Cairo_Render_Type);
 
+   ------------
+   -- Append --
+   ------------
+
+   overriding procedure Append
+     (View  : not null access Nazar_Gtk_Draw_View_Record;
+      Model : not null access Nazar.Models.Draw.Root_Draw_Model'Class)
+   is
+      use type Nazar.Models.Nazar_Model;
+   begin
+      if View.Base_Model = null then
+         View.Set_Model (Model);
+      else
+         View.Layers.Append
+           (Draw_Layer_Record'
+              (Background  => False,
+               Need_Render => True,
+               Model       => Model_Access (Model),
+               Surface     => Cairo.Null_Surface));
+      end if;
+   end Append;
+
    ---------
    -- Arc --
    ---------
@@ -99,11 +122,13 @@ package body Nazar.Views.Gtk_Views.Draw is
    is
       Cr : constant Cairo.Cairo_Context := Cairo.Create (Surface);
    begin
-      Cairo.Set_Source_Rgb
+      Cairo.Set_Source_Rgba
         (Cr,
          Glib.Gdouble (Color.Red),
          Glib.Gdouble (Color.Green),
-         Glib.Gdouble (Color.Blue));
+         Glib.Gdouble (Color.Blue),
+         Glib.Gdouble (Color.Alpha));
+      Cairo.Set_Operator (Cr, Cairo.Cairo_Operator_Source);
       Cairo.Paint (Cr);
       Cairo.Destroy (Cr);
    end Clear;
@@ -122,22 +147,23 @@ package body Nazar.Views.Gtk_Views.Draw is
       View   : constant Nazar_Gtk_Draw_View := From_Object (Self);
       Width  : constant Gint := Event.Width;
       Height : constant Gint := Event.Height;
+      Reload : constant Boolean :=
+                 Width /= View.Width or else Height /= View.Height;
    begin
 
-      if Width /= View.Width or else Height /= View.Height
-        or else View.Surface = Cairo.Null_Surface
-      then
-         if View.Surface /= Cairo.Null_Surface then
-            Cairo.Surface_Destroy (View.Surface);
-         end if;
+      for Layer of View.Layers loop
+         if Reload or else Layer.Surface = Cairo.Null_Surface then
+            if Layer.Surface /= Cairo.Null_Surface then
+               Cairo.Surface_Destroy (Layer.Surface);
+            end if;
 
-         View.Surface :=
-           Gdk.Window.Create_Similar_Surface
-             (View.Draw_Area.Get_Window,
-              Cairo.Cairo_Content_Color,
-              View.Draw_Area.Get_Allocated_Width,
-              View.Draw_Area.Get_Allocated_Height);
-      end if;
+            Layer.Surface :=
+              Cairo.Image_Surface.Create
+                (Format => Cairo.Image_Surface.Cairo_Format_ARGB32,
+                 Width  => Width,
+                 Height => Height);
+         end if;
+      end loop;
 
       View.Width := Width;
       View.Height := Height;
@@ -159,8 +185,10 @@ package body Nazar.Views.Gtk_Views.Draw is
    is
       View   : constant Nazar_Gtk_Draw_View := From_Object (Self);
    begin
-      Cairo.Set_Source_Surface (Cr, View.Surface, 0.0, 0.0);
-      Cairo.Paint (Cr);
+      for Layer of View.Layers loop
+         Cairo.Set_Source_Surface (Cr, Layer.Surface, 0.0, 0.0);
+         Cairo.Paint (Cr);
+      end loop;
       return True;
    end Draw_Handler;
 
@@ -228,6 +256,12 @@ package body Nazar.Views.Gtk_Views.Draw is
    begin
       View.Viewport := Model.Bounding_Box;
       View.Set_Model (Model);
+      View.Layers.Append
+        (Draw_Layer_Record'
+           (Background  => True,
+            Need_Render => True,
+            Model       => Model_Access (Model),
+            Surface     => Cairo.Null_Surface));
       return View;
    end Nazar_Gtk_Draw_View_New;
 
@@ -241,21 +275,39 @@ package body Nazar.Views.Gtk_Views.Draw is
       use type Nazar.Models.Nazar_Model;
    begin
       if View.Model = null then
-         Clear (View.Surface,
-                (0.6, 0.45, 0.82, 1.0));
+         for Layer of View.Layers loop
+            if Layer.Background then
+               Clear (Layer.Surface, (0.6, 0.45, 0.82, 1.0));
+            else
+               Clear (Layer.Surface, (1.0, 0.2, 0.3, 0.0));
+            end if;
+         end loop;
       else
-         declare
-            Context : Nazar.Draw_Operations.Draw_Context;
-            Render  : Cairo_Render_Type;
-         begin
-            Clear (View.Surface, View.Draw_Model.Background_Color);
-            Render.Cr := Cairo.Create (View.Surface);
-            Nazar.Draw_Operations.Set_Target
-              (Context, Nazar_Float (View.Width), Nazar_Float (View.Height));
-            Nazar.Draw_Operations.Set_Viewport (Context, View.Viewport);
-            View.Draw_Model.Render (Context, Render);
-            Cairo.Destroy (Render.Cr);
-         end;
+         for Layer of View.Layers loop
+            if Layer.Need_Render
+              or else Layer.Model.Render_Queued
+            then
+               declare
+                  Context : Nazar.Draw_Operations.Draw_Context;
+                  Render  : Cairo_Render_Type;
+               begin
+                  if Layer.Background then
+                     Clear (Layer.Surface, Layer.Model.Background_Color);
+                  else
+                     Clear (Layer.Surface, (1.0, 1.0, 1.0, 0.0));
+                  end if;
+
+                  Render.Cr := Cairo.Create (Layer.Surface);
+                  Nazar.Draw_Operations.Set_Target
+                    (Context,
+                     Nazar_Float (View.Width), Nazar_Float (View.Height));
+                  Nazar.Draw_Operations.Set_Viewport (Context, View.Viewport);
+                  Layer.Model.Render (Context, Render);
+                  Cairo.Destroy (Render.Cr);
+                  Layer.Need_Render := False;
+               end;
+            end if;
+         end loop;
       end if;
    end Redraw;
 
@@ -362,9 +414,14 @@ package body Nazar.Views.Gtk_Views.Draw is
       Bounding_Box : constant Rectangle :=
         Nazar.Models.Draw.Nazar_Draw_Model (Model).Bounding_Box;
    begin
+      View.Layers.Append
+        (Draw_Layer_Record'
+           (Background  => True,
+            Need_Render => True,
+            Model       => Model_Access (Model),
+            Surface     => Cairo.Null_Surface));
       View.Viewport := Bounding_Box;
-      Nazar.Views.Gtk_Views.Nazar_Gtk_View_Record (View.all)
-        .Set_Model (Model);
+      Nazar.Views.Gtk_Views.Nazar_Gtk_View_Record (View.all).Set_Model (Model);
    end Set_Model;
 
    ------------------
