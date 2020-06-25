@@ -178,7 +178,21 @@ package body Nazar.Views.Gtk_Views.Draw is
       View.Width := Width;
       View.Height := Height;
 
-      View.Redraw;
+      declare
+         procedure Do_Redraw;
+
+         ---------------
+         -- Do_Redraw --
+         ---------------
+
+         procedure Do_Redraw is
+         begin
+            View.Redraw;
+         end Do_Redraw;
+
+      begin
+         Nazar.Main.With_Render_Lock (Do_Redraw'Access);
+      end;
 
       return True;
 
