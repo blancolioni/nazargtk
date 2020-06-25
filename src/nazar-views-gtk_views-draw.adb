@@ -4,6 +4,9 @@ with Cairo.Image_Surface;
 
 with Nazar.Colors;
 with Nazar.Draw_Operations;
+with Nazar.Gtk_Main;
+with Nazar.Main;
+with Nazar.Trigonometry;
 
 package body Nazar.Views.Gtk_Views.Draw is
 
@@ -50,6 +53,12 @@ package body Nazar.Views.Gtk_Views.Draw is
       Radius        : Nazar_Float;
       Start_Radians : Nazar_Float;
       End_Radians   : Nazar_Float);
+
+   overriding procedure Image
+     (Render        : in out Cairo_Render_Type;
+      Resource_Name : String;
+      Width, Height : Nazar_Float;
+      Rotation      : Nazar.Trigonometry.Angle);
 
    overriding procedure Render_Current
      (Render   : in out Cairo_Render_Type;
@@ -191,6 +200,39 @@ package body Nazar.Views.Gtk_Views.Draw is
       end loop;
       return True;
    end Draw_Handler;
+
+   -----------
+   -- Image --
+   -----------
+
+   overriding procedure Image
+     (Render        : in out Cairo_Render_Type;
+      Resource_Name : String;
+      Width, Height : Nazar_Float;
+      Rotation      : Nazar.Trigonometry.Angle)
+   is
+      use Glib;
+      Image_Surface : constant Cairo.Cairo_Surface :=
+                        Nazar.Gtk_Main.Get_Image_Resource (Resource_Name);
+      Img_Height    : constant Gint :=
+                        Cairo.Image_Surface.Get_Height (Image_Surface);
+      Img_Width     : constant Gint :=
+                        Cairo.Image_Surface.Get_Width (Image_Surface);
+      Height_Ratio  : constant Gdouble :=
+                        Gdouble (Height) / Gdouble (Img_Height);
+      Width_Ratio   : constant Gdouble :=
+                        Gdouble (Width) / Gdouble (Img_Width);
+   begin
+      Cairo.Save (Render.Cr);
+      Cairo.Translate
+        (Render.Cr,
+         Render.X - Gdouble (Width / 2.0),
+         Render.Y - Gdouble (Height / 2.0));
+      Cairo.Scale (Render.Cr, Width_Ratio, Height_Ratio);
+      Cairo.Set_Source_Surface (Render.Cr, Image_Surface, 0.0, 0.0);
+      Cairo.Paint (Render.Cr);
+      Cairo.Restore (Render.Cr);
+   end Image;
 
    -------------
    -- Line_To --
