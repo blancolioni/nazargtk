@@ -101,6 +101,7 @@ package body Nazar.Views.Gtk_Views.Draw is
                Need_Render => True,
                Model       => Model_Access (Model),
                Surface     => Cairo.Null_Surface));
+         View.Observe (Model);
       end if;
    end Append;
 
