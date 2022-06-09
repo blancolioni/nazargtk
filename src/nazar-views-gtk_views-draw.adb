@@ -1,9 +1,12 @@
+with Ada.Text_IO;
+
 with Gdk.Event;
 
 with Cairo.Image_Surface;
 
 with Nazar.Colors;
 with Nazar.Draw_Operations;
+with Nazar.Events.Clicks;
 with Nazar.Gtk_Main;
 with Nazar.Main;
 with Nazar.Trigonometry;
@@ -13,6 +16,11 @@ package body Nazar.Views.Gtk_Views.Draw is
    function From_Object is
      new Nazar.Views.Gtk_Views.From_Gtk_Object
        (Nazar_Gtk_Draw_View_Record, Nazar_Gtk_Draw_View);
+
+   function Click_Handler
+     (Self  : access Glib.Object.GObject_Record'Class;
+      Event : Gdk.Event.Gdk_Event_Button)
+      return Boolean;
 
    function Configure_Handler
      (Self  : access Glib.Object.GObject_Record'Class;
@@ -86,6 +94,11 @@ package body Nazar.Views.Gtk_Views.Draw is
    overriding procedure Restore_State
      (Render : in out Cairo_Render_Type);
 
+   procedure Get_World_Position
+     (View               : Nazar_Gtk_Draw_View;
+      Screen_X, Screen_Y : Glib.Gdouble;
+      World_X, World_Y   : out Nazar_Float);
+
    ------------
    -- Append --
    ------------
@@ -146,6 +159,28 @@ package body Nazar.Views.Gtk_Views.Draw is
       Cairo.Paint (Cr);
       Cairo.Destroy (Cr);
    end Clear;
+
+   -------------------
+   -- Click_Handler --
+   -------------------
+
+   function Click_Handler
+     (Self  : access Glib.Object.GObject_Record'Class;
+      Event : Gdk.Event.Gdk_Event_Button)
+      return Boolean
+   is
+      View   : constant Nazar_Gtk_Draw_View := From_Object (Self);
+      X, Y   : Nazar_Float;
+   begin
+      Get_World_Position (View, Event.X, Event.Y, X, Y);
+      Ada.Text_IO.Put_Line ("click: " & Integer'Image (Integer (X))
+                            & Integer'Image (Integer (Y)));
+
+      Nazar.Events.Clicks.Emit_Click_Signal
+        (View.all, View.all, X, Y,
+         Nazar.Events.Clicks.Single);
+      return True;
+   end Click_Handler;
 
    -----------------------
    -- Configure_Handler --
@@ -219,6 +254,41 @@ package body Nazar.Views.Gtk_Views.Draw is
       end loop;
       return True;
    end Draw_Handler;
+
+   ------------------------
+   -- Get_World_Position --
+   ------------------------
+
+   procedure Get_World_Position
+     (View               : Nazar_Gtk_Draw_View;
+      Screen_X, Screen_Y : Glib.Gdouble;
+      World_X, World_Y   : out Nazar_Float)
+   is
+      use Glib;
+      Scale : constant Nazar_Float :=
+                Nazar_Float'Max (View.Viewport.W / Nazar_Float (View.Width),
+                                 View.Viewport.H / Nazar_Float (View.Height));
+   begin
+      World_X :=
+        Nazar_Float (Screen_X - Glib.Gdouble (View.Width / 2)) * Scale;
+      World_Y :=
+        Nazar_Float (Screen_Y - Glib.Gdouble (View.Height / 2)) * Scale;
+
+      Ada.Text_IO.Put_Line
+        ("screen (" & Integer'Image (Integer (Screen_X))
+         & "," & Integer'Image (Integer (Screen_Y))
+         & ")"
+         & ": view" & View.Width'Image & " x" & View.Height'Image
+         & "; viewport (" & Integer'Image (Integer (View.Viewport.X))
+         & "," & Integer'Image (Integer (View.Viewport.Y))
+         & ")"
+         & Integer'Image (Integer (View.Viewport.W))
+         & " x" & Integer'Image (Integer (View.Viewport.H))
+         & "; world " & Integer'Image (Integer (World_X))
+         & "," & Integer'Image (Integer (World_Y))
+         & ")");
+
+   end Get_World_Position;
 
    -----------
    -- Image --
@@ -301,6 +371,11 @@ package body Nazar.Views.Gtk_Views.Draw is
         (Configure_Handler'Access, View.Object);
       View.Draw_Area.On_Draw
         (Draw_Handler'Access, View.Object);
+      View.Draw_Area.On_Button_Press_Event
+        (Click_Handler'Access, View.Object);
+      View.Draw_Area.Add_Events
+        (Gdk.Event.Button_Press_Mask);
+
       return Nazar_View (View);
    end Nazar_Gtk_Draw_View_Create;
 
