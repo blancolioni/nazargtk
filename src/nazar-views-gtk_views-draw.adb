@@ -76,6 +76,10 @@ package body Nazar.Views.Gtk_Views.Draw is
       Italic : Boolean;
       Bold   : Boolean);
 
+   overriding procedure Set_Line_Width
+     (Render : in out Cairo_Render_Type;
+      Width  : Nazar_Float);
+
    overriding procedure Save_State
      (Render : in out Cairo_Render_Type);
 
@@ -459,6 +463,18 @@ package body Nazar.Views.Gtk_Views.Draw is
             else Cairo.Cairo_Font_Weight_Normal));
       Cairo.Set_Font_Size (Render.Cr, Glib.Gdouble (Size));
    end Set_Font;
+
+   --------------------
+   -- Set_Line_Width --
+   --------------------
+
+   overriding procedure Set_Line_Width
+     (Render : in out Cairo_Render_Type;
+      Width  : Nazar_Float)
+   is
+   begin
+      Cairo.Set_Line_Width (Render.Cr, Glib.Gdouble (Width));
+   end Set_Line_Width;
 
    ---------------
    -- Set_Model --
